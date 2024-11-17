@@ -26,6 +26,13 @@ transmission_pairs_2024 <- readRDS("~/GitHub/EPI-569-Final-Project/data/transmis
 setwd("C:/Users/maria/OneDrive/Documents/GitHub/EPI-569-Final-Project/data")
 ```
 
+1. Make a preliminary assessment of the data
+a. What concerns do you have about the dataset?
+
+
+b. What cleaning or restructuring of the data may be required?
+
+2. Epicurve and SIR plot
 
 ```{r}
 tabyl(rff_2024$`Date_of_Onset`)
@@ -107,7 +114,7 @@ ggplot(state_no_long, aes(x = Date, y = Count, color = State, group = State)) +
     values = c("Susceptible" = "chocolate3", "Infectious" = "darkslategray", "Recovered" = "goldenrod")
   ) +
   scale_x_date(
-    breaks = scales::date_breaks("2 days"),
+    breaks = scales::date_breaks("3 days"),
     labels = scales::date_format("%b %d")
   ) +
   theme_minimal() +
@@ -117,3 +124,6 @@ ggplot(state_no_long, aes(x = Date, y = Count, color = State, group = State)) +
   )
 ```
 
+3. Assign roles to outbreak team members
+
+4. Begin brainstorming questions you have about the outbreak and plan to address
