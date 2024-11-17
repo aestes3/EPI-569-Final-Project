@@ -1,26 +1,119 @@
 ---
-title: "Data Clean"
+title: "Raw Data"
 format: pdf
 editor: visual
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(janitor)
+library(lubridate)
+library(here)
 ```
 
-You can add options to executable code like this
-
 ```{r}
-#| echo: false
-2 * 2
+ rff_2024 <- readRDS("C:/Users/maria/OneDrive/Documents/GitHub/EPI-569-Final-Project/data/rff_2024.rds")
+
+roster_2024 <- readRDS("~/GitHub/EPI-569-Final-Project/data/roster_2024.rds")
+
+transmission_pairs_2024 <- readRDS("~/GitHub/EPI-569-Final-Project/data/transmission_pairs_2024.rds")
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+```{r}
+setwd("C:/Users/maria/OneDrive/Documents/GitHub/EPI-569-Final-Project/data")
+```
+
+
+```{r}
+tabyl(rff_2024$`Date_of_Onset`)
+class(rff_2024$`Date_of_Onset`)
+```
+
+```{r}
+epicurveonset <-rff_2024 %>%
+    filter(!is.na(`Date_of_Onset`)) %>%  arrange(`Date_of_Onset`)
+```
+
+```{r}
+epicurveonset$Date_of_Onset <- as.Date(epicurveonset$Date_of_Onset)
+
+epicurveonset <- epicurveonset[order(epicurveonset$Date_of_Onset), ]
+
+epicurveonset$cumulative_case_count <- cumsum(!is.na(epicurveonset$Date_of_Onset))
+
+head(epicurveonset)
+```
+
+```{r}
+ggplot(data = epicurveonset, aes(x = Date_of_Onset)) +
+  geom_bar(fill = "lightskyblue2", color = "lightskyblue4") +
+  labs(
+    x = "Date of Onset",
+    y = "Case Count",
+    title = "Temporal Distribution of Cases by Date of Onset"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+
+sdate <- as.Date(min(rff_2024$Date_of_Onset, na.rm = TRUE))
+edate <- as.Date(max(rff_2024$Date_of_Onset, na.rm = TRUE))
+
+sequeniald <- seq.Date(sdate, edate, by = "day")
+
+numb_suceptible <- integer(length = length(sequeniald))
+numb_infectious <- integer(length = length(sequeniald))
+numb_recovered <- integer(length = length(sequeniald))
+
+total_pop <- nrow(rff_2024)
+
+for (i in seq_along(sequeniald)) {
+  current_date <- sequeniald[i]
+  
+ 
+  numb_infectious[i] <- sum(rff_2024$Date_of_Onset <= current_date & 
+                            (is.na(rff_2024$Date_of_Recovery) | rff_2024$Date_of_Recovery > current_date), na.rm = TRUE)
+  
+  numb_recovered[i] <- sum(rff_2024$Date_of_Recovery <= current_date, na.rm = TRUE)
+  
+  numb_suceptible[i] <- total_pop - numb_infectious[i] - numb_recovered[i]
+}
+
+state_no <- data.frame(
+  Date = sequeniald,
+  Susceptible = numb_suceptible,
+  Infectious = numb_infectious,
+  Recovered = numb_recovered
+)
+
+state_no_long <- data.frame(
+  Date = rep(sequeniald, times = 3),
+  State = rep(c("Susceptible", "Infectious", "Recovered"), each = length(sequeniald)),
+  Count = c(numb_suceptible, numb_infectious, numb_recovered)
+)
+
+library(ggplot2)
+ggplot(state_no_long, aes(x = Date, y = Count, color = State, group = State)) +
+  geom_line(size = 1) +
+  labs(
+    title = "Number of Susceptible, Infectious, and Recovered Individuals by Day",
+    x = "Date", y = "Count of individuals "
+  ) +
+  scale_color_manual(
+    values = c("Susceptible" = "chocolate3", "Infectious" = "darkslategray", "Recovered" = "goldenrod")
+  ) +
+  scale_x_date(
+    breaks = scales::date_breaks("2 days"),
+    labels = scales::date_format("%b %d")
+  ) +
+  theme_minimal() +
+  theme(
+    legend.title = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
