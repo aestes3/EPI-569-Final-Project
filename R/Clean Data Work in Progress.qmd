@@ -1,26 +1,168 @@
 ---
-title: "Data Clean"
-format: pdf
+title: "Check-in 1"
 editor: visual
+format:
+  html:
+    embed-resources: true
+widescreen: true
+smaller: true
+toc: true
+toc-expand: true
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
+```{r setup, include = FALSE, echo = FALSE, eval = TRUE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(janitor)
+library(lubridate)
+library(here)
 ```
 
-You can add options to executable code like this
-
+## Load Data
 ```{r}
-#| echo: false
-2 * 2
+rff_2024 <- readRDS(here("data/rff_2024.rds"))
+
+roster_2024 <- readRDS(here("data/roster_2024.rds"))
+
+transmission_pairs_2024 <- readRDS(here("data/transmission_pairs_2024.rds"))
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+## 1.  Make a preliminary assessment of the data
+
+```{r}
+variables_to_check <- c("Date_of_Onset", "Date_of_Recovery")
+
+missing_counts <- sapply(rff_2024[variables_to_check], function(x) sum(is.na(x)))
+
+missing_proportions <- sapply(rff_2024[variables_to_check], function(x) mean(is.na(x)) * 100)
+
+missing_summary <- data.frame(
+  Variable = variables_to_check,
+  Missing_Count = missing_counts,
+  Missing_Percentage = missing_proportions
+)
+
+print(missing_summary)
+```
+
+## 1a.  What concerns do you have about the dataset?
+
+ The dataset presents significant missing data issues, particularly when reviewing the Date_of_Onset and Date_of_Recovery columns. Both variables have 35 missing values, representing 38.46% of the data in each column. This high percentage of missing data could pose a substantial challenge for any analysis that relies on the timing of these events, such as understanding the progression of disease or calculating time intervals between onset and recovery. The missing data could introduce bias if some individuals were excluded from reporting or if data collection needed to be more consistent across specific periods or groups. If this missing data is addressed, it may maintain analysis, particularly in modeling the duration of illness or treatment effects.
+
+## 1b.  What cleaning or restructuring of the data may be required?
+
+ Several cleaning and restructuring steps were performed based on the analysis of missing data and potential issues in the dataset. The significant missing values in the Date_of_Onset and Date_of_Recovery variables (38.46% missing in each) were addressed by removing observations with missing values. As a result, out of the original 91 cases, only 56 remain for analysis. This reduction in sample size may impact the generalization of the findings and should be considered when drawing conclusions from the analysis. Additionally, the dataset was cleaned by ensuring consistency in date formats and verifying the logical order of Date_of_Recovery relative to Date_of_Onset. These steps improved the quality of the dataset, making it more suitable for analysis.
+
+## 2.  Epicurve and SIR plot
+
+```{r}
+tabyl(rff_2024$`Date_of_Onset`)
+class(rff_2024$`Date_of_Onset`)
+```
+
+```{r}
+epicurveonset <-rff_2024 %>%
+    filter(!is.na(`Date_of_Onset`)) %>%  arrange(`Date_of_Onset`)
+```
+
+```{r}
+epicurveonset$Date_of_Onset <- as.Date(epicurveonset$Date_of_Onset)
+
+epicurveonset <- epicurveonset[order(epicurveonset$Date_of_Onset), ]
+
+epicurveonset$cumulative_case_count <- cumsum(!is.na(epicurveonset$Date_of_Onset))
+
+head(epicurveonset)
+```
+
+```{r}
+ggplot(data = epicurveonset, aes(x = Date_of_Onset)) +
+  geom_bar(fill = "lightskyblue2", color = "lightskyblue4") +
+  labs(
+    x = "Date of Onset",
+    y = "Case Count",
+    title = "Temporal Distribution of Cases by Date of Onset"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+
+sdate <- as.Date(min(rff_2024$Date_of_Onset, na.rm = TRUE))
+edate <- as.Date(max(rff_2024$Date_of_Onset, na.rm = TRUE))
+
+sequeniald <- seq.Date(sdate, edate, by = "day")
+
+numb_suceptible <- integer(length = length(sequeniald))
+numb_infectious <- integer(length = length(sequeniald))
+numb_recovered <- integer(length = length(sequeniald))
+
+total_pop <- nrow(rff_2024)
+
+for (i in seq_along(sequeniald)) {
+  current_date <- sequeniald[i]
+  
+ 
+  numb_infectious[i] <- sum(rff_2024$Date_of_Onset <= current_date & 
+                            (is.na(rff_2024$Date_of_Recovery) | rff_2024$Date_of_Recovery > current_date), na.rm = TRUE)
+  
+  numb_recovered[i] <- sum(rff_2024$Date_of_Recovery <= current_date, na.rm = TRUE)
+  
+  numb_suceptible[i] <- total_pop - numb_infectious[i] - numb_recovered[i]
+}
+
+state_no <- data.frame(
+  Date = sequeniald,
+  Susceptible = numb_suceptible,
+  Infectious = numb_infectious,
+  Recovered = numb_recovered
+)
+
+state_no_long <- data.frame(
+  Date = rep(sequeniald, times = 3),
+  State = rep(c("Susceptible", "Infectious", "Recovered"), each = length(sequeniald)),
+  Count = c(numb_suceptible, numb_infectious, numb_recovered)
+)
+
+library(ggplot2)
+ggplot(state_no_long, aes(x = Date, y = Count, color = State, group = State)) +
+  geom_line(linewidth = 1) +
+  labs(
+    title = "Number of Susceptible, Infectious, and Recovered Individuals by Day",
+    x = "Date", y = "Count of individuals "
+  ) +
+  scale_color_manual(
+    values = c("Susceptible" = "chocolate3", "Infectious" = "darkslategray", "Recovered" = "goldenrod")
+  ) +
+  scale_x_date(
+    breaks = scales::date_breaks("3 days"),
+    labels = scales::date_format("%b %d")
+  ) +
+  theme_minimal() +
+  theme(
+    legend.title = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+## 3.  Assign roles to outbreak team members
+
+    Maria Paula - 1. Draw an epi curve (lecture week 4) – required 
+    Mia - 2. Natural history parameters (lecture week 1) – required 
+    Aidan - 3. Reproduction numbers – required 
+    Ravi - 4. Generate a mathematical model to answer a question – required 
+    Maria Paula - 7. Herd immunity threshold
+
+## 4.  Begin brainstorming questions you have about the outbreak and plan to address
+
+    1.  When was the peak of the outbreak and why did it peak there?
+
+    2.  What is the threshold of herd immunity?
+
+    3.  How infectious was the pathogen?
+
+    4.  Did transmission vary from course to course?
+
+    5.  Was there a difference in symptom onset for first years versus second years?
