@@ -1,0 +1,63 @@
+---
+title: "Check-in2"
+author: "Mia, Maria Paula, Ravi, Aidan"
+format: html
+editor: visual
+---
+
+```{r}
+getwd()
+```
+
+# Check-in 2:
+
+### Final analysis plan: research questions
+
+1. When did the outbreak peak, and what factors contributed to that peak? (Maria 	Paula) 
+
+2. What is the threshold of herd immunity? (Maria Paula) 
+
+3. With R0 as the main measurement, how infectious was the pathogen? - Aidan 
+
+4. Did transmission vary between courses, as measured by differences in serial	intervals? - Mia 
+
+5. How would the outbreak differ if infection did not confer total immunity? (Ravi) 
+ 
+### Final analysis plan: methods for each question
+
+Question 1. To investigate the epidemic peak and contributing factors, we will be calculating the magnitude of the epidemic when it peaks and how this magnitude changes over time by using transmission modeling. We will calculate the number of susceptibles and the effect on the force of infection and Rt. These parameters will be changed to demonstrate how the peak moves and which factors influence it the most. Then, we will do a sensitivity analysis by playing with the number of susceptible people and different parameters (betas). 
+
+Question 2. HIT will be calculated using the following equation: HIT = 1 / 1- (R0).  
+
+Question 3. R0 will be calculated using rate of contact (α),  duration of infection (d), and probability of transmission between infected and non-infected individuals (β).   
+
+Question 4. The serial interval (the average time between the onset of symptoms in a primary case and the onset of symptoms in the secondary case) will be calculated and compared for those in EPI 569 versus EPI 517. This will allow us to determine how transmission varies between populations. 
+
+Question 5. 
+- calculate necessary parameters from the data set.  
+- Reconfigure the compartmental model to reflect incomplete immunity (SIRS). 
+- model in R using deSolve 
+- plot models of numbers of S, I, R individuals to review and compare to complete immunity model (epi curve) 
+- depending on timing of presentation, plot varying rates of immunity loss.  
+
+### Final analysis plan: data needs for each question
+
+Question 1.  Data based on SIR model, beta calculations to investigate  (parameters) different scenarios of  transmission models for sensitivity analysis. 
+
+Question 2. Data on the R0 and its value will be required in order to properly calculate the HIT. 
+
+Question 3. Contact rates, duration of infection and probability of transmission will need to be gathered in order to properly calculate the R0. 
+
+Question 4. We would need to calculate the serial interval for each patient, so we would need to know the time of primary case symptom onset, the time of secondary case symptom onset, and the chain of transmission (who infected who). We would also need to know the course (EPI 569 versus EPI 517) for each patient. 
+
+Question 5. force of infection (calculated from daily contact rate and transmission probability), recovery rate, loss of immunity rate (hypothetical?), birth and death rate (may cancel out, or not applicable?)  
+
+### Final assignments for Presentation Roles: 
+
+Introduction: Ravi  
+
+Questions and Assumptions: Maria Paula 
+
+Methods, Analysis, Results divided based on the questions we analyzed.  
+
+Conclusions: Mia 
