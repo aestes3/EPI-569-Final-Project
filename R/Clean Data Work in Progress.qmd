@@ -1,3 +1,7 @@
+```{r}
+
+```
+
 ---
 title: "Check-in 1"
 editor: visual
@@ -20,6 +24,7 @@ library(here)
 ```
 
 ## Load Data
+
 ```{r}
 rff_2024 <- readRDS(here("data/rff_2024.rds"))
 
@@ -29,7 +34,7 @@ transmission_pairs_2024 <- readRDS(here("data/transmission_pairs_2024.rds"))
 
 ```
 
-## 1.  Make a preliminary assessment of the data
+## 1. Make a preliminary assessment of the data
 
 ```{r}
 variables_to_check <- c("Date_of_Onset", "Date_of_Recovery")
@@ -47,15 +52,15 @@ missing_summary <- data.frame(
 print(missing_summary)
 ```
 
-## 1a.  What concerns do you have about the dataset?
+## 1a. What concerns do you have about the dataset?
 
- The dataset presents significant missing data issues, particularly when reviewing the Date_of_Onset and Date_of_Recovery columns. Both variables have 35 missing values, representing 38.46% of the data in each column. This high percentage of missing data could pose a substantial challenge for any analysis that relies on the timing of these events, such as understanding the progression of disease or calculating time intervals between onset and recovery. The missing data could introduce bias if some individuals were excluded from reporting or if data collection needed to be more consistent across specific periods or groups. If this missing data is addressed, it may maintain analysis, particularly in modeling the duration of illness or treatment effects.
+The dataset presents significant missing data issues, particularly when reviewing the Date_of_Onset and Date_of_Recovery columns. Both variables have 35 missing values, representing 38.46% of the data in each column. This high percentage of missing data could pose a substantial challenge for any analysis that relies on the timing of these events, such as understanding the progression of disease or calculating time intervals between onset and recovery. The missing data could introduce bias if some individuals were excluded from reporting or if data collection needed to be more consistent across specific periods or groups. If this missing data is addressed, it may maintain analysis, particularly in modeling the duration of illness or treatment effects.
 
-## 1b.  What cleaning or restructuring of the data may be required?
+## 1b. What cleaning or restructuring of the data may be required?
 
- Several cleaning and restructuring steps were performed based on the analysis of missing data and potential issues in the dataset. The significant missing values in the Date_of_Onset and Date_of_Recovery variables (38.46% missing in each) were addressed by removing observations with missing values. As a result, out of the original 91 cases, only 56 remain for analysis. This reduction in sample size may impact the generalization of the findings and should be considered when drawing conclusions from the analysis. Additionally, the dataset was cleaned by ensuring consistency in date formats and verifying the logical order of Date_of_Recovery relative to Date_of_Onset. These steps improved the quality of the dataset, making it more suitable for analysis.
+Several cleaning and restructuring steps were performed based on the analysis of missing data and potential issues in the dataset. The significant missing values in the Date_of_Onset and Date_of_Recovery variables (38.46% missing in each) were addressed by removing observations with missing values. As a result, out of the original 91 cases, only 56 remain for analysis. This reduction in sample size may impact the generalization of the findings and should be considered when drawing conclusions from the analysis. Additionally, the dataset was cleaned by ensuring consistency in date formats and verifying the logical order of Date_of_Recovery relative to Date_of_Onset. These steps improved the quality of the dataset, making it more suitable for analysis.
 
-## 2.  Epicurve and SIR plot
+## 2. Epicurve and SIR plot
 
 ```{r}
 tabyl(rff_2024$`Date_of_Onset`)
@@ -147,22 +152,31 @@ ggplot(state_no_long, aes(x = Date, y = Count, color = State, group = State)) +
   )
 ```
 
-## 3.  Assign roles to outbreak team members
+## 3. Assign roles to outbreak team members
 
-    Maria Paula - 1. Draw an epi curve (lecture week 4) – required 
-    Mia - 2. Natural history parameters (lecture week 1) – required 
-    Aidan - 3. Reproduction numbers – required 
-    Ravi - 4. Generate a mathematical model to answer a question – required 
-    Maria Paula - 7. Herd immunity threshold
+```         
+Maria Paula - 1. Draw an epi curve (lecture week 4) – required 
+Mia - 2. Natural history parameters (lecture week 1) – required 
+Aidan - 3. Reproduction numbers – required 
+Ravi - 4. Generate a mathematical model to answer a question – required 
+Maria Paula - 7. Herd immunity threshold
+```
 
-## 4.  Begin brainstorming questions you have about the outbreak and plan to address
+## 4. Begin brainstorming questions you have about the outbreak and plan to address
 
-    1.  When was the peak of the outbreak and why did it peak there?
+```         
+1.  When was the peak of the outbreak and why did it peak there?
 
-    2.  What is the threshold of herd immunity?
+2.  What is the threshold of herd immunity?
 
-    3.  How infectious was the pathogen?
+3.  How infectious was the pathogen?
 
-    4.  Did transmission vary from course to course?
+4.  Did transmission vary from course to course?
 
-    5.  Was there a difference in symptom onset for first years versus second years?
+5.  Was there a difference in symptom onset for first years versus second years?
+```
+
+```{r}
+
+contact rate 
+```
