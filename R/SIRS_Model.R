@@ -75,3 +75,32 @@ SIRS <-ggplot(sirs_out_long,aes(x=time,y=value,colour=variable,group=variable))+
     xlab("Time")+ylab("Number") #Add labels
 
 print(SIRS)
+
+parms3 <- c(alpha= 2.123,        # alpha = daily contacts
+            beta=0.581,        # beta = probability of infection on contact
+            sigma=0.609,       # sigma = rate of recovery per day
+            mu = 0.0,        # mu =  per capita birth and death rate
+            omega = 1/15)     # omega = rate of immune loss per day
+
+
+sirs_ode <- function(times,init,parms3){
+    with(as.list(c(parms3,init)), {
+        # ODEs
+        dS <- mu*(S+I+R) + omega*R -alpha*beta*I*S/(S+I+R) - mu*S 
+        dI <- alpha*beta*I*S/(S+I+R)-sigma*I - mu*I
+        dR <- sigma*I  - omega*R - mu*R
+        list(c(dS,dI,dR))
+    })
+}
+
+# This creates the output from model equations.  
+#If you want to run the model for longer, change the second term eg: seq(0,200,...)
+times <- seq(0,100,length.out=100)
+sirs2_out <- lsoda(init,times,sirs_ode,parms3)
+sirs2_out_long <- melt(as.data.frame(sirs2_out),"time")
+
+SIRS2 <-ggplot(sirs2_out_long,aes(x=time,y=value,colour=variable,group=variable))+
+    geom_line(lwd=2)+             #Add line
+    xlab("Time")+ylab("Number") #Add labels
+
+print(SIRS2)
