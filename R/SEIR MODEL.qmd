@@ -205,3 +205,55 @@ ggsave(filename = "SEIRS.png", plot = SEIRS, width = 8, height = 6, dpi = 300)
 # Include the plot in the Quarto document
 knitr::include_graphics("SEIRS.png")
 ```
+
+Model just before outbreak end
+
+```{r}
+first_case <- min(rff$Date_of_Onset, na.rm = TRUE)
+last_case <- max(rff$Date_of_Onset, na.rm = TRUE)
+last_recovery <- max(rff$Date_of_Recovery, na.rm = TRUE)
+
+outbreak_length <- last_recovery - first_case
+
+# Define model parameters
+parms3 <- c(beta = 1.444,   # beta = daily effective contacts (alpha*beta)
+           sigma = 0.973,  # sigma = rate of exposed to infectious per day
+           gamma = 0.918,  # gamma = rate of recovery from infectious to recovered per day
+           mu = 0.0,       # mu = per capita birth and death rate
+           omega = 1/5)     # omega = rate of immune loss per day
+
+# Initial conditions
+init <- c(S = 90,           # number initially susceptible
+          E = 0,            # number initially exposed
+          I = 1,            # number initially infectious
+          R = 0)            # initially immune or "recovered"
+
+# Define SEIR model equations
+seirs_ode2 <- function(times, init, parms3) {
+  with(as.list(c(parms3, init)), {
+    dS <- mu * (S + E + I + R) + omega * R - beta * I * S / (S + E + I + R) - mu * S
+    dE <- beta * I * S / (S + E + I + R) - sigma * E - mu * E
+    dI <- sigma * E - gamma * I - mu * I
+    dR <- gamma * I - omega * R - mu * R
+    list(c(dS, dE, dI, dR))
+  })
+}
+
+# Model time and solution
+times <- seq(0, 100, length.out = 100)
+seirs_out2 <- lsoda(init, times, seirs_ode2, parms3)
+seirs_out_long2 <- melt(as.data.frame(seirs_out2), "time")
+
+# Plot the SEIR model output
+SEIRS2 <- ggplot(seirs_out_long2, aes(x = time, y = value, colour = variable, group = variable)) +
+  geom_line(lwd = 2) +
+  xlab("Time") + ylab("Number")
+
+# Save the SEIR plot as a PNG image
+ggsave(filename = "SEIRS2.png", plot = SEIRS, width = 8, height = 6, dpi = 300)
+```
+
+```{r}
+# Include the plot in the Quarto document
+knitr::include_graphics("SEIRS2.png")
+```

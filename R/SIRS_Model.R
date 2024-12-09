@@ -115,7 +115,7 @@ parms <- c(beta = 1.444,   # beta = daily effective contacts (alpha*beta)
 
 # Initial conditions
 init <- c(S = 90,           # number initially susceptible
-          E = 0,            # number initially exposed
+          E = 2,            # number initially exposed
           I = 1,            # number initially infectious
           R = 0)            # initially immune or "recovered"
 
