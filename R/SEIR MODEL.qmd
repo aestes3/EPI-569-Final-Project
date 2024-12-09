@@ -1,0 +1,164 @@
+---
+title: "SEIR"
+author: "Maria Paula Ibarcena Woll"
+format: html
+editor: visual
+---
+
+```{r, include=TRUE, echo = TRUE, warning=FALSE}
+library(kableExtra)
+library(deSolve)
+library(reshape2)
+library(ggplot2)
+library(knitr)
+library(janitor)
+library(lubridate)
+library(plotly)
+```
+
+```{r}
+#Load data
+rff <- readRDS("C:/Users/maria/OneDrive/Documents/GitHub/EPI-569-Final-Project/data/rff_2024.rds")
+
+```
+
+## Clean Data Names
+
+```{r}
+
+rff <- clean_names(rff)
+
+```
+
+Initial Data Exploration
+
+```{r}
+
+#Examine Data Structure
+str(rff)
+
+#Examine First Few Rows of Data
+head(rff)
+
+#Check for Missing Values
+colSums(is.na(rff))
+
+#Summary of Data
+summary(rff)
+```
+
+
+## Math Model: Compartmental SEIR
+
+### Calculate:
+
+#### Sigma & Gamma 
+
+#### Sigma: Exposed -\> Infectious
+
+```{r}
+# Ensure date_time_exposure is in POSIXct format
+rff$date_time_exposure <- as.POSIXct(rff$date_time_exposure)
+
+# Ensure how_many_hours_after_exposure_did_you_develop_symptoms is numeric
+rff$how_many_hours_after_exposure_did_you_develop_symptoms <- as.numeric(rff$how_many_hours_after_exposure_did_you_develop_symptoms)
+
+# Calculate the datetime of symptoms onset
+rff$date_time_symptoms <- rff$date_time_exposure + dhours(rff$how_many_hours_after_exposure_did_you_develop_symptoms)
+
+# Calculate the incubation period in hours
+rff$incubation_period_hours <- as.numeric(difftime(rff$date_time_symptoms, rff$date_time_exposure, units = "hours"))
+
+# Convert incubation period to days
+rff$incubation_period_days <- rff$incubation_period_hours / 24
+
+# Calculate the average incubation period in days
+average_incubation_period_days <- mean(rff$incubation_period_days, na.rm = TRUE)
+
+# Calculate sigma (rate of progression from exposed to infectious per day)
+sigma <- 1 / average_incubation_period_days
+
+# Print sigma
+sigma
+
+```
+
+#### Gamma: Infectious -/> Recovered
+```{r}
+#Calculate gamma parameter rate of recovery from infectious to recovered per day 1/duration
+# Calculate the datetime of feeling better
+rff$date_time_feel_better <- rff$date_time_symptoms +
+  dhours(rff$how_many_hours_after_your_symptom_onset_did_you_feel_better)
+
+# Calculate the duration of infectiousness in hours
+rff$duration_of_infectiousness <- as.numeric(difftime(rff$date_time_feel_better, rff$date_time_symptoms, units = "hours"))
+#Average Duration of Infectiousness
+duration_of_infectiousness_h <- mean(rff$duration_of_infectiousness, na.rm = TRUE)
+gamma <- 1 / (duration_of_infectiousness_h / 24)  # Convert to days
+
+print(gamma)
+
+```
+
+
+#### Beta must be recalculated for a SEIR model.
+```{r}
+#Calculate Beta Parameter daily effective contacts (beta*alpha)
+Beta <- rff %>%
+  group_by(infectedby, date_of_exposure) %>%
+  summarise(contacts = n_distinct(case_id))
+
+mean(Beta$contacts)
+```
+
+
+### Differential Equations
+
+```{r, echo = TRUE}
+
+# Define parameters -- THESE ARE THE MODEL PARAMETERS
+parms <- c(beta=1.444,   # beta = daily effective contacts (alpha*beta)
+           sigma=0.973,  # sigma = rate of exposed to infectious per day
+           gamma=0.918,  # gamma = rate of recovery from infectious to recovered per day
+           mu = 0.0,    # mu =  per capita birth and death rate
+           omega = 0.0)  # omega = rate of immune loss per day
+
+# Initial conditions --  THESE ARE THE CONDITIONS AT THE START OF THE SIMULATION
+init <- c(S=90,           # number initially susceptible
+          E=0,            # number initially exposed
+          I=1,            # number initially infectious
+          R=0)            # initially immune or "recovered"
+
+# Define model equations -- do not change -- or change with care!
+# These are the model equations.  They are written as a function called sir_ode.  
+# "parms" and "init" input the parameters and inital conditions into the equations 
+seir_ode <- function(times,init,parms) {
+    with(as.list(c(parms,init)), {
+        # ODEs
+    dS <- mu * (S + E + I + R) + omega * R - beta * I * S / (S + E + I + R) - mu * S
+    dE <- beta * I * S / (S + E + I + R) - sigma * E - mu * E
+    dI <- sigma * E - gamma * I - mu * I
+    dR <- gamma * I - omega * R - mu * R
+    list(c(dS, dE, dI, dR))
+    })
+}
+
+# This creates the output from model equations.  
+#If you want to run the model for longer, change the second term eg: seq(0,200,...)
+times <- seq(0,100,length.out=100)
+seir_out <- lsoda(init,times,seir_ode,parms)
+seir_out_long <- melt(as.data.frame(seir_out),"time")
+
+#Plotting the model output
+SEIR <-ggplot(seir_out_long,aes(x=time,y=value,colour=variable,group=variable))+
+    geom_line(lwd=2)+             #Add line
+    xlab("Time")+ylab("Number")   #Add labels
+
+print(SEIR)
+
+# Save the SEIR plot as a PNG image
+ggsave(filename = "SEIR.png", plot = SEIR, width = 8, height = 6, dpi = 300)
+
+# Optional: Include the plot in your R Markdown file
+knitr::include_graphics("SEIR.png")
+```
