@@ -206,6 +206,8 @@ ggsave(filename = "SEIRS.png", plot = SEIRS, width = 8, height = 6, dpi = 300)
 knitr::include_graphics("SEIRS.png")
 ```
 
+Decrease in R and increase in S, but no new cases because the outbreak had ended and the population is fixed.
+
 Model just before outbreak end
 
 ```{r}
@@ -219,8 +221,8 @@ outbreak_length <- last_recovery - first_case
 parms3 <- c(beta = 1.444,   # beta = daily effective contacts (alpha*beta)
            sigma = 0.973,  # sigma = rate of exposed to infectious per day
            gamma = 0.918,  # gamma = rate of recovery from infectious to recovered per day
-           mu = 0.0,       # mu = per capita birth and death rate
-           omega = 1/5)     # omega = rate of immune loss per day
+           mu = 0.50,       # mu = per capita birth and death rate
+           omega = 1/60)     # omega = rate of immune loss per day
 
 # Initial conditions
 init <- c(S = 90,           # number initially susceptible
@@ -229,7 +231,7 @@ init <- c(S = 90,           # number initially susceptible
           R = 0)            # initially immune or "recovered"
 
 # Define SEIR model equations
-seirs_ode2 <- function(times, init, parms3) {
+seirs_ode2 <- function(times2, init, parms3) {
   with(as.list(c(parms3, init)), {
     dS <- mu * (S + E + I + R) + omega * R - beta * I * S / (S + E + I + R) - mu * S
     dE <- beta * I * S / (S + E + I + R) - sigma * E - mu * E
@@ -250,7 +252,7 @@ SEIRS2 <- ggplot(seirs_out_long2, aes(x = time, y = value, colour = variable, gr
   xlab("Time") + ylab("Number")
 
 # Save the SEIR plot as a PNG image
-ggsave(filename = "SEIRS2.png", plot = SEIRS, width = 8, height = 6, dpi = 300)
+ggsave(filename = "SEIRS2.png", plot = SEIRS2, width = 8, height = 6, dpi = 300)
 ```
 
 ```{r}
