@@ -144,7 +144,7 @@ max(rff$Date_of_Onset, na.rm=TRUE) - min(rff$Date_of_Onset, na.rm=TRUE) #33 days
 estimates <- wallinga_teunis(epicurve.epiestim$I, 
                              method="parametric_si",
                              config = list(t_start = seq(3, 37), #Change to 33 days 
-                                           t_end = seq(3, 37),
+                                           t_end = seq(3, 37), #Needed to change to fix issue with row length
                                            mean_si = mean_si, 
                                            std_si = std_si, 
                                            n_sim = 1000))
@@ -169,7 +169,7 @@ plot2 <- ggplot(data=plot2.data, aes(x=dates, y=I, labs=FALSE)) +
     theme(axis.text.x = element_text(angle = 45)) +
     labs(x = "Symptom Onset Date", 
          y = "Number of Cases (bars) and Rt (line;95% CI)",
-         title = "Epi Curve for Rollins Fall Fever") +
+         title = "Epi Curve for Rollins Fall Fever with Rt") +
     geom_hline(aes(yintercept=1), colour="red", linetype="dashed", size=0.5) +
     geom_errorbar(data=plot2.data, aes(ymax=upperCI, ymin=lowerCI, width=0.6),stat="identity", size=0.8, show.legend=FALSE) +
     geom_line(data=plot2.data[!is.na(plot2.data$R),],aes(x=dates, y=R), color='blue', size=0.5) +
