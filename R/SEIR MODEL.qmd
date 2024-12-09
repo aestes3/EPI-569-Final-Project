@@ -48,12 +48,11 @@ colSums(is.na(rff))
 summary(rff)
 ```
 
-
 ## Math Model: Compartmental SEIR
 
 ### Calculate:
 
-#### Sigma & Gamma 
+#### Sigma & Gamma
 
 #### Sigma: Exposed -\> Infectious
 
@@ -84,7 +83,8 @@ sigma
 
 ```
 
-#### Gamma: Infectious -/> Recovered
+#### Gamma: Infectious -/\> Recovered
+
 ```{r}
 #Calculate gamma parameter rate of recovery from infectious to recovered per day 1/duration
 # Calculate the datetime of feeling better
@@ -153,4 +153,3 @@ ggsave(filename = "SEIR.png", plot = SEIR, width = 8, height = 6, dpi = 300)
 # Include the plot in the Quarto document
 knitr::include_graphics("SEIR.png")
 ```
-

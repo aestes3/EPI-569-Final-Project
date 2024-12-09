@@ -8,6 +8,7 @@ library(reshape2)
 #Load data
 rff <- readRDS(here("data/rff_2024.rds"))
 
+?here
 
 # Define parameters -- THESE ARE THE MODEL PARAMETERS
 parms <- c(alpha= 2.123,        # alpha = daily contacts
