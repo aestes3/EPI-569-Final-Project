@@ -221,8 +221,8 @@ outbreak_length <- last_recovery - first_case
 parms3 <- c(beta = 1.444,   # beta = daily effective contacts (alpha*beta)
            sigma = 0.973,  # sigma = rate of exposed to infectious per day
            gamma = 0.918,  # gamma = rate of recovery from infectious to recovered per day
-           mu = 0.50,       # mu = per capita birth and death rate
-           omega = 1/60)     # omega = rate of immune loss per day
+           mu = 0.0,       # mu = per capita birth and death rate
+           omega = 1/25)     # omega = rate of immune loss per day
 
 # Initial conditions
 init <- c(S = 90,           # number initially susceptible
