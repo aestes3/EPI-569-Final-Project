@@ -6,7 +6,7 @@ library(deSolve)
 library(reshape2)
 
 #Load data
-rff <- readRDS(here("/Users/ravikineu/Desktop/EPI 569/FINAL/EPI-569-Final-Project/data/rff_2024.rds"))
+rff <- readRDS(here("data/rff_2024.rds"))
 
 
 # Define parameters -- THESE ARE THE MODEL PARAMETERS
