@@ -14,6 +14,7 @@ library(knitr)
 library(janitor)
 library(lubridate)
 library(plotly)
+library(tidyverse)
 ```
 
 ```{r}
@@ -100,65 +101,56 @@ print(gamma)
 
 ```
 
-
-#### Beta must be recalculated for a SEIR model.
 ```{r}
-#Calculate Beta Parameter daily effective contacts (beta*alpha)
+# Calculate Beta Parameter daily effective contacts (beta*alpha)
 Beta <- rff %>%
   group_by(infectedby, date_of_exposure) %>%
-  summarise(contacts = n_distinct(case_id))
+  summarise(contacts = n_distinct(case_id), .groups = "drop")
 
 mean(Beta$contacts)
 ```
 
+```{r}
+# Define model parameters
+parms <- c(beta = 1.444,   # beta = daily effective contacts (alpha*beta)
+           sigma = 0.973,  # sigma = rate of exposed to infectious per day
+           gamma = 0.918,  # gamma = rate of recovery from infectious to recovered per day
+           mu = 0.0,       # mu = per capita birth and death rate
+           omega = 0.0)     # omega = rate of immune loss per day
 
-### Differential Equations
+# Initial conditions
+init <- c(S = 90,           # number initially susceptible
+          E = 0,            # number initially exposed
+          I = 1,            # number initially infectious
+          R = 0)            # initially immune or "recovered"
 
-```{r, echo = TRUE}
-
-# Define parameters -- THESE ARE THE MODEL PARAMETERS
-parms <- c(beta=1.444,   # beta = daily effective contacts (alpha*beta)
-           sigma=0.973,  # sigma = rate of exposed to infectious per day
-           gamma=0.918,  # gamma = rate of recovery from infectious to recovered per day
-           mu = 0.0,    # mu =  per capita birth and death rate
-           omega = 0.0)  # omega = rate of immune loss per day
-
-# Initial conditions --  THESE ARE THE CONDITIONS AT THE START OF THE SIMULATION
-init <- c(S=90,           # number initially susceptible
-          E=0,            # number initially exposed
-          I=1,            # number initially infectious
-          R=0)            # initially immune or "recovered"
-
-# Define model equations -- do not change -- or change with care!
-# These are the model equations.  They are written as a function called sir_ode.  
-# "parms" and "init" input the parameters and inital conditions into the equations 
-seir_ode <- function(times,init,parms) {
-    with(as.list(c(parms,init)), {
-        # ODEs
+# Define SEIR model equations
+seir_ode <- function(times, init, parms) {
+  with(as.list(c(parms, init)), {
     dS <- mu * (S + E + I + R) + omega * R - beta * I * S / (S + E + I + R) - mu * S
     dE <- beta * I * S / (S + E + I + R) - sigma * E - mu * E
     dI <- sigma * E - gamma * I - mu * I
     dR <- gamma * I - omega * R - mu * R
     list(c(dS, dE, dI, dR))
-    })
+  })
 }
 
-# This creates the output from model equations.  
-#If you want to run the model for longer, change the second term eg: seq(0,200,...)
-times <- seq(0,100,length.out=100)
-seir_out <- lsoda(init,times,seir_ode,parms)
-seir_out_long <- melt(as.data.frame(seir_out),"time")
+# Model time and solution
+times <- seq(0, 100, length.out = 100)
+seir_out <- lsoda(init, times, seir_ode, parms)
+seir_out_long <- melt(as.data.frame(seir_out), "time")
 
-#Plotting the model output
-SEIR <-ggplot(seir_out_long,aes(x=time,y=value,colour=variable,group=variable))+
-    geom_line(lwd=2)+             #Add line
-    xlab("Time")+ylab("Number")   #Add labels
-
-print(SEIR)
+# Plot the SEIR model output
+SEIR <- ggplot(seir_out_long, aes(x = time, y = value, colour = variable, group = variable)) +
+  geom_line(lwd = 2) +
+  xlab("Time") + ylab("Number")
 
 # Save the SEIR plot as a PNG image
 ggsave(filename = "SEIR.png", plot = SEIR, width = 8, height = 6, dpi = 300)
+```
 
-# Optional: Include the plot in your R Markdown file
+```{r}
+# Include the plot in the Quarto document
 knitr::include_graphics("SEIR.png")
 ```
+
