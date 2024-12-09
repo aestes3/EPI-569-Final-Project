@@ -1,0 +1,452 @@
+---
+title: "Natural History"
+editor: visual
+format:
+  html:
+    embed-resources: true
+widescreen: true
+smaller: true
+toc: true
+toc-expand: true
+---
+
+```{r setup, include = FALSE, echo = FALSE, eval = TRUE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(janitor)
+library(lubridate)
+library(here)
+library(fitdistrplus)
+```
+
+## Load Data
+
+```{r}
+rff_2024 <- readRDS(here("rff_2024.rds"))
+
+roster_2024 <- readRDS(here("roster_2024.rds"))
+
+transmission_pairs_2024 <- readRDS(here("transmission_pairs_2024.rds"))
+
+```
+
+## Natural History Parameters
+
+```{r}
+
+#Incubation Period
+rff2<-rff_2024 %>%
+  mutate(incubation_period1 = (Date_of_Onset - `Date of Exposure`)
+  )
+
+rff3<-rff2 %>%
+  mutate(incubation_period2 = difftime(Date_Time_Onset,Date_Time_Exposure, units = "hours")
+  )
+
+#Duration of Illness
+rff4<-rff3 %>%
+  mutate(duration_of_illness1 = (Date_of_Recovery - Date_of_Onset)
+  )
+
+rff5<-rff4 %>%
+  mutate(duration_of_illness2 = difftime(Date_Time_Recovery,Date_Time_Onset, units = "hours")
+  )
+
+#Transmission Interval
+tp1<-transmission_pairs_2024 %>%
+  mutate(transmission_interval = difftime(Date_Time_Exposure,Infectedby_Date_Time_Exposure, units = "hours")
+  )
+
+#Generation Time
+tp2<-tp1 %>%
+  mutate(generation_time = difftime(Date_Time_Onset,Infectedby_Date_Time_Onset, units = "hours")
+  )
+```
+
+### Incubation Period
+
+```{r}
+#Calculated
+
+#We are going to drop those values that are negative;
+rff_corrected<-filter(rff5, incubation_period2>0)
+
+
+#Median
+round(median(rff_corrected$incubation_period2, na.rm = TRUE),2)
+#Mean
+round(mean(rff_corrected$incubation_period2, na.rm = TRUE),2)
+#Standard deviation
+round(sd(rff_corrected$incubation_period2, na.rm = TRUE),2)
+
+
+#Range
+round(min(rff_corrected$incubation_period2, na.rm = TRUE),2)
+round(max(rff_corrected$incubation_period2, na.rm = TRUE),2)
+
+
+#Log incubation period
+rff_corrected$incubation_period2<-as.numeric(rff_corrected$incubation_period2)
+rff_corrected2<-rff_corrected %>%
+  mutate(
+    incubation_log_hours_calc = log(incubation_period2)
+  )
+#Median log
+round(median(rff_corrected2$incubation_log_hours_calc, na.rm = TRUE),2)
+#Standard deviation log
+round(sd(rff_corrected2$incubation_log_hours_calc, na.rm = TRUE),2)
+#Dispersion log
+round(exp(sd(rff_corrected2$incubation_log_hours_calc, na.rm = TRUE)),2)
+#Minimum log
+round(min(rff_corrected2$incubation_log_hours_calc, na.rm = TRUE),2)
+#Maximum log
+round(max(rff_corrected2$incubation_log_hours_calc, na.rm = TRUE),2)
+
+
+#Because incubation periods are log-normally distributed, 66% of cases should fall within the median/exp(sd) and median*exp(sd)
+calc_incubation_lower_bound<-median(rff_corrected2$incubation_log_hours_calc, na.rm = TRUE)/exp(sd(rff_corrected2$incubation_log_hours_calc, na.rm = TRUE))
+
+calc_incubation_upper_bound<-median(rff_corrected2$incubation_log_hours_calc, na.rm = TRUE)*exp(sd(rff_corrected2$incubation_log_hours_calc, na.rm = TRUE))
+
+calc_incubation_cases_in_range <- length(which(rff_corrected2$incubation_log_hours_calc > calc_incubation_lower_bound & rff_corrected2$incubation_log_hours_calc < calc_incubation_upper_bound))
+
+calc_incubation_secondary <- sum(!is.na(rff_corrected2$incubation_log_hours_calc))
+
+calc_incubation_pct_range <- round(100*(calc_incubation_cases_in_range/calc_incubation_secondary),0)
+
+
+#Graphing distribution and a fitted log-normal distribution
+calc_incubation<-rff_corrected2$incubation_period2 [!is.na(rff_corrected2$incubation_period2) & rff_corrected2$incubation_period2!=0]
+
+calc_incubation_fit_ln <- fitdist(calc_incubation, "lnorm")
+
+summary(calc_incubation_fit_ln)
+
+denscomp(calc_incubation_fit_ln)
+
+
+#Graphing a histogram of the normal incubation period
+hist(rff_corrected2$incubation_period2,
+     xlab = "Hours Between Exposure and Symptom Onset", ylab = "Observations", main = "Distribution of Incubation Period"
+     )
+```
+
+```{r}
+#Given
+
+#Median
+incubation_median<-round(median(rff_2024$`How many hours after exposure did you develop symptoms?`, na.rm = TRUE),2)
+#Mean
+incubation_mean<-round(mean(rff_2024$`How many hours after exposure did you develop symptoms?`, na.rm = TRUE),2)
+#Standard deviation
+round(sd(rff_2024$`How many hours after exposure did you develop symptoms?`, na.rm = TRUE),2)
+
+#Range
+round(min(rff_2024$`How many hours after exposure did you develop symptoms?`, na.rm = TRUE),2)
+round(max(rff_2024$`How many hours after exposure did you develop symptoms?`, na.rm = TRUE),2)
+
+
+#Log incubation period
+rff_log<-rff_2024 %>%
+  mutate(
+    incubation_log_hours = log(`How many hours after exposure did you develop symptoms?`)
+  )
+#Median log
+round(median(rff_log$incubation_log_hours, na.rm = TRUE),2)
+#Standard deviation log
+round(sd(rff_log$incubation_log_hours, na.rm = TRUE),2)
+#Dispersion log
+round(exp(sd(rff_log$incubation_log_hours, na.rm = TRUE)),2)
+#Minimum log
+round(min(rff_log$incubation_log_hours, na.rm = TRUE),2)
+#Maximum log
+round(max(rff_log$incubation_log_hours, na.rm = TRUE),2)
+
+
+#Because incubation periods are log-normally distributed, 66% of cases should fall within the median/exp(sd) and median*exp(sd)
+incubation_lower_bound<-median(rff_log$incubation_log_hours, na.rm = TRUE)/exp(sd(rff_log$incubation_log_hours, na.rm = TRUE))
+
+incubation_upper_bound<-median(rff_log$incubation_log_hours, na.rm = TRUE)*exp(sd(rff_log$incubation_log_hours, na.rm = TRUE))
+
+incubation_cases_in_range <- length(which(rff_log$incubation_log_hours > incubation_lower_bound & rff_log$incubation_log_hours < incubation_upper_bound))
+
+incubation_secondary <- sum(!is.na(rff_log$incubation_log_hours))
+
+incubation_pct_range <- round(100*(incubation_cases_in_range/incubation_secondary),0)
+
+
+#Graphing distribution and a fitted log-normal distribution
+incubation<-rff_log$`How many hours after exposure did you develop symptoms?`[!is.na(rff_log$`How many hours after exposure did you develop symptoms?`) & rff_log$`How many hours after exposure did you develop symptoms?`!=0]
+
+incubation_fit_ln <- fitdist(incubation, "lnorm")
+
+summary(incubation_fit_ln)
+
+denscomp(incubation_fit_ln)
+
+
+#Graphing a histogram of the normal incubation period
+hist(rff_log$`How many hours after exposure did you develop symptoms?`,
+     xlab = "Hours Between Exposure and Symptom Onset", ylab = "Observations", main = "Distribution of Incubation Period"
+     )
+abline(v=incubation_mean, col="red", lwd=2)
+abline(v=incubation_median, col="green", lwd=2)
+```
+
+### Duration of Illness
+
+```{r}
+#Given
+
+#Median
+duration_median<-round(median(rff_2024$`How many hours after your symptom onset did you feel better?`, na.rm = TRUE),2)
+#Mean
+duration_mean<-round(mean(rff_2024$`How many hours after your symptom onset did you feel better?`, na.rm = TRUE),2)
+#Standard deviation
+round(sd(rff_2024$`How many hours after your symptom onset did you feel better?`, na.rm = TRUE),2)
+
+#Range
+round(min(rff_2024$`How many hours after your symptom onset did you feel better?`, na.rm = TRUE),2)
+round(max(rff_2024$`How many hours after your symptom onset did you feel better?`, na.rm = TRUE),2)
+
+
+#Log duration period
+rff_log2<-rff_log %>%
+  mutate(
+    duration_log_hours = log(`How many hours after your symptom onset did you feel better?`)
+  )
+#Median log
+round(median(rff_log2$duration_log_hours, na.rm = TRUE),2)
+#Standard deviation log
+round(sd(rff_log2$duration_log_hours, na.rm = TRUE),2)
+#Dispersion log
+round(exp(sd(rff_log2$duration_log_hours, na.rm = TRUE)),2)
+#Minumum log
+round(min(rff_log2$duration_log_hours, na.rm = TRUE),2)
+#Maximum log
+round(max(rff_log2$duration_log_hours, na.rm = TRUE),2)
+
+
+#Because duration of illness is log-normally distributed, 66% of cases should fall within the median/exp(sd) and median*exp(sd)
+duration_lower_bound<-median(rff_log2$duration_log_hours, na.rm = TRUE)/exp(sd(rff_log2$duration_log_hours, na.rm = TRUE))
+
+duration_upper_bound<-median(rff_log2$duration_log_hours, na.rm = TRUE)*exp(sd(rff_log2$duration_log_hours, na.rm = TRUE))
+
+duration_cases_in_range <- length(which(rff_log2$duration_log_hours > duration_lower_bound & rff_log2$duration_log_hours < duration_upper_bound))
+
+duration_secondary <- sum(!is.na(rff_log2$duration_log_hours))
+
+duration_pct_range <- round(100*(duration_cases_in_range/duration_secondary),0)
+
+
+#Graphing distribution and a fitted log-normal distribution
+duration<-rff_log2$`How many hours after your symptom onset did you feel better?`[!is.na(rff_log2$`How many hours after your symptom onset did you feel better?`) & rff_log2$`How many hours after your symptom onset did you feel better?`!=0]
+
+duration_fit_ln <- fitdist(duration, "lnorm")
+
+summary(duration_fit_ln)
+
+denscomp(duration_fit_ln)
+
+
+#Graphing a histogram of the normal incubation period
+hist(rff_log2$`How many hours after your symptom onset did you feel better?`,
+     xlab = "Hours Between Symptom Onset and Recovery", ylab = "Observations", main = "Distribution of Duration of Illness"
+     )
+abline(v=duration_mean, col="red", lwd=2)
+abline(v=duration_median, col="green", lwd=2)
+```
+
+```{r}
+#Calculated
+
+#Median
+round(median(rff5$duration_of_illness2, na.rm = TRUE),2)
+#Mean
+round(mean(rff5$duration_of_illness2, na.rm = TRUE),2)
+#Standard deviation
+round(sd(rff5$duration_of_illness2, na.rm = TRUE),2)
+
+
+#Range
+round(min(rff5$duration_of_illness2, na.rm = TRUE),2)
+round(max(rff5$duration_of_illness2, na.rm = TRUE),2)
+
+
+#Log incubation period
+rff5$duration_of_illness2<-as.numeric(rff5$duration_of_illness2)
+rff6<-rff5 %>%
+  mutate(
+    duration_log_hours_calc = log(duration_of_illness2)
+  )
+#Median log
+round(median(rff6$duration_log_hours_calc, na.rm = TRUE),2)
+#Standard deviation log
+round(sd(rff6$duration_log_hours_calc, na.rm = TRUE),2)
+#Dispersion log
+round(exp(sd(rff6$duration_log_hours_calc, na.rm = TRUE)),2)
+#Minimum log
+round(min(rff6$duration_log_hours_calc, na.rm = TRUE),2)
+#Maximum log
+round(max(rff6$duration_log_hours_calc, na.rm = TRUE),2)
+
+
+#Because incubation periods are log-normally distributed, 66% of cases should fall within the median/exp(sd) and median*exp(sd)
+calc_duration_lower_bound<-median(rff6$duration_log_hours_calc, na.rm = TRUE)/exp(sd(rff6$duration_log_hours_calc, na.rm = TRUE))
+
+calc_duration_upper_bound<-median(rff6$duration_log_hours_calc, na.rm = TRUE)*exp(sd(rff6$duration_log_hours_calc, na.rm = TRUE))
+
+calc_duration_cases_in_range <- length(which(rff6$duration_log_hours_calc > calc_duration_lower_bound & rff6$duration_log_hours_calc < calc_duration_upper_bound))
+
+calc_duration_secondary <- sum(!is.na(rff6$duration_log_hours_calc))
+
+calc_duration_pct_range <- round(100*(calc_duration_cases_in_range/calc_duration_secondary),0)
+
+
+#Graphing distribution and a fitted log-normal distribution
+calc_duration<-rff6$duration_of_illness2 [!is.na(rff6$duration_of_illness2) & rff6$duration_of_illness2!=0]
+
+calc_duration_fit_ln <- fitdist(duration, "lnorm")
+
+summary(calc_duration_fit_ln)
+
+denscomp(calc_duration_fit_ln)
+
+
+#Graphing a histogram of the normal incubation period
+hist(rff6$duration_of_illness2,
+     xlab = "Hours Between Exposure and Symptom Onset", ylab = "Observations", main = "Distribution of Incubation Period"
+     )
+
+```
+
+### Transmission Interval
+
+```{r}
+#Calculated
+
+#Median
+transmission_median<-round(median(tp2$transmission_interval, na.rm = TRUE),2)
+#Mean
+transmission_mean<-round(mean(tp2$transmission_interval, na.rm = TRUE),2)
+#Standard deviation
+round(sd(tp2$transmission_interval, na.rm = TRUE),2)
+
+#Range
+round(min(tp2$transmission_interval, na.rm = TRUE),2)
+round(max(tp2$transmission_interval, na.rm = TRUE),2)
+
+
+#Log transmission interval
+tp2$transmission_interval<-as.numeric(tp2$transmission_interval)
+tp3<-tp2 %>%
+  mutate(
+    transmission_log_hours_calc = log(transmission_interval)
+  )
+#Median log
+round(median(tp3$transmission_log_hours_calc, na.rm = TRUE),2)
+#Standard deviation log
+round(sd(tp3$transmission_log_hours_calc, na.rm = TRUE),2)
+#Dispersion log
+round(exp(sd(tp3$transmission_log_hours_calc, na.rm = TRUE)),2)
+#Minimum log
+round(min(tp3$transmission_log_hours_calc, na.rm = TRUE),2)
+#Maximum log
+round(max(tp3$transmission_log_hours_calc, na.rm = TRUE),2)
+
+
+#Because transmission intervals are log-normally distributed, 66% of cases should fall within the median/exp(sd) and median*exp(sd)
+transmission_lower_bound<-median(tp3$transmission_log_hours_calc, na.rm = TRUE)/exp(sd(tp3$transmission_log_hours_calc, na.rm = TRUE))
+
+transmission_upper_bound<-median(tp3$transmission_log_hours_calc, na.rm = TRUE)*exp(sd(tp3$transmission_log_hours_calc, na.rm = TRUE))
+
+transmission_cases_in_range <- length(which(tp3$transmission_log_hours_calc > transmission_lower_bound & tp3$transmission_log_hours_calc < transmission_upper_bound))
+
+transmission_secondary <- sum(!is.na(tp3$transmission_log_hours_calc))
+
+transmission_pct_range <- round(100*(transmission_cases_in_range/transmission_secondary),0)
+
+
+#Graphing distribution and a fitted log-normal distribution
+transmission<-tp3$transmission_interval[!is.na(tp3$transmission_interval) & tp3$transmission_interval!=0]
+
+transmission_fit_ln <- fitdist(transmission, "lnorm")
+
+summary(transmission_fit_ln)
+
+denscomp(transmission_fit_ln)
+
+#Graphing a histogram of the normal incubation period
+hist(tp2$transmission_interval ,
+     xlab = "Hours Between Primary Exposure and Secondary Exposure", ylab = "Observations", main = "Distribution of Transmission Interval"
+     )
+abline(v=transmission_mean, col="red", lwd=2)
+abline(v=transmission_median, col="green", lwd=2)
+```
+
+### Generation Time
+
+```{r}
+#Calculated
+
+#Median
+generation_median<-round(median(tp3$generation_time, na.rm = TRUE),2)
+#Mean
+generation_mean<-round(mean(tp3$generation_time, na.rm = TRUE),2)
+#Standard deviation
+round(sd(tp3$generation_time, na.rm = TRUE),2)
+
+#Range
+round(min(tp3$generation_time, na.rm = TRUE),2)
+round(max(tp3$generation_time, na.rm = TRUE),2)
+
+
+#Log generation time
+tp3$generation_time<-as.numeric(tp2$generation_time)
+tp4<-tp3 %>%
+  mutate(
+    generation_log_hours_calc = log(generation_time)
+  )
+#Median generation time
+round(median(tp4$generation_log_hours_calc, na.rm = TRUE),2)
+#Standard deviation log
+round(sd(tp4$generation_log_hours_calc, na.rm = TRUE),2)
+#Dispersion log
+round(exp(sd(tp4$generation_log_hours_calc, na.rm = TRUE)),2)
+#Minimum log
+round(min(tp4$generation_log_hours_calc, na.rm = TRUE),2)
+#Maximum log
+round(max(tp4$generation_log_hours_calc, na.rm = TRUE),2)
+
+
+#Because transmission intervals are log-normally distributed, 66% of cases should fall within the median/exp(sd) and median*exp(sd)
+generation_lower_bound<-median(tp4$generation_log_hours_calc, na.rm = TRUE)/exp(sd(tp4$generation_log_hours_calc, na.rm = TRUE))
+
+generation_upper_bound<-median(tp4$generation_log_hours_calc, na.rm = TRUE)*exp(sd(tp4$generation_log_hours_calc, na.rm = TRUE))
+
+generation_cases_in_range <- length(which(tp4$generation_log_hours_calc > generation_lower_bound & tp4$generation_log_hours_calc < generation_upper_bound))
+
+generation_secondary <- sum(!is.na(tp4$generation_log_hours_calc))
+
+generation_pct_range <- round(100*(generation_cases_in_range/generation_secondary),0)
+
+
+#Graphing a histogram of the normal incubation period
+hist(tp4$generation_time ,
+     xlab = "Hours Between Primary Symptom Onset and Secondary Symptom Onset", ylab = "Observations", main = "Distribution of Generation Time"
+     )
+abline(v=generation_mean, col="red", lwd=2)
+abline(v=transmission_median, col="green", lwd=2)
+
+
+#Graphing distribution and a fitted log-normal distribution
+generation<-tp4$generation_time [!is.na(tp4$generation_time) & tp4$generation_time!=0]
+
+generation_fit_ln <- fitdist(generation, "lnorm")
+
+summary(generation_fit_ln)
+
+denscomp(generation_fit_ln)
+
+```
