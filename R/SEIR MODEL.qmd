@@ -15,11 +15,12 @@ library(janitor)
 library(lubridate)
 library(plotly)
 library(tidyverse)
+library(here)
 ```
 
 ```{r}
 #Load data
-rff <- readRDS("C:/Users/maria/OneDrive/Documents/GitHub/EPI-569-Final-Project/data/rff_2024.rds")
+rff <- readRDS(here("data/rff_2024.rds"))
 
 ```
 
@@ -143,7 +144,7 @@ seir_out_long <- melt(as.data.frame(seir_out), "time")
 # Plot the SEIR model output
 SEIR <- ggplot(seir_out_long, aes(x = time, y = value, colour = variable, group = variable)) +
   geom_line(lwd = 2) +
-  xlab("Time") + ylab("Number")
+  xlab("Time (in Days)") + ylab("Cases")
 
 # Save the SEIR plot as a PNG image
 ggsave(filename = "SEIR.png", plot = SEIR, width = 8, height = 6, dpi = 300)
@@ -157,9 +158,9 @@ knitr::include_graphics("SEIR.png")
 Modelling with waning immunity
 
 ```{r}
-first_case <- min(rff$Date_of_Onset, na.rm = TRUE)
-last_case <- max(rff$Date_of_Onset, na.rm = TRUE)
-last_recovery <- max(rff$Date_of_Recovery, na.rm = TRUE)
+first_case <- min(rff$date_of_onset, na.rm = TRUE)
+last_case <- max(rff$date_of_onset, na.rm = TRUE)
+last_recovery <- max(rff$date_of_recovery, na.rm = TRUE)
 
 outbreak_length <- last_recovery - first_case
 
@@ -195,7 +196,7 @@ seirs_out_long <- melt(as.data.frame(seirs_out), "time")
 # Plot the SEIR model output
 SEIRS <- ggplot(seirs_out_long, aes(x = time, y = value, colour = variable, group = variable)) +
   geom_line(lwd = 2) +
-  xlab("Time") + ylab("Number")
+  xlab("Time (in Days)") + ylab("Cases")
 
 # Save the SEIR plot as a PNG image
 ggsave(filename = "SEIRS.png", plot = SEIRS, width = 8, height = 6, dpi = 300)
@@ -211,9 +212,9 @@ Decrease in R and increase in S, but no new cases because the outbreak had ended
 Model just before outbreak end
 
 ```{r}
-first_case <- min(rff$Date_of_Onset, na.rm = TRUE)
-last_case <- max(rff$Date_of_Onset, na.rm = TRUE)
-last_recovery <- max(rff$Date_of_Recovery, na.rm = TRUE)
+first_case <- min(rff$date_of_onset, na.rm = TRUE)
+last_case <- max(rff$date_of_onset, na.rm = TRUE)
+last_recovery <- max(rff$date_of_recovery, na.rm = TRUE)
 
 outbreak_length <- last_recovery - first_case
 
