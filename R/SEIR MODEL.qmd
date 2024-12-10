@@ -144,11 +144,27 @@ seir_out_long <- melt(as.data.frame(seir_out), "time")
 # Plot the SEIR model output
 SEIR <- ggplot(seir_out_long, aes(x = time, y = value, colour = variable, group = variable)) +
   geom_line(lwd = 2) +
-  xlab("Time (in Days)") + ylab("Cases")
+  xlab("Time (in Days)") + ylab("Number in Each Compartment")
 
 # Save the SEIR plot as a PNG image
 ggsave(filename = "SEIR.png", plot = SEIR, width = 8, height = 6, dpi = 300)
 ```
+
+$$
+    \frac{dS}{dt} = -\lambda_t I_t S_t/N
+    $$
+
+$$
+    \frac{dE}{dt} = \lambda_t S_t I_t/N - \sigma_t E_t
+    $$
+
+$$
+    \frac{dI}{dt} = \sigma_t E_t - \gamma_t I_t 
+    $$
+
+$$
+    \frac{dR}{dt} = \gamma_t I_t 
+$$
 
 ```{r}
 # Include the plot in the Quarto document
@@ -163,13 +179,15 @@ last_case <- max(rff$date_of_onset, na.rm = TRUE)
 last_recovery <- max(rff$date_of_recovery, na.rm = TRUE)
 
 outbreak_length <- last_recovery - first_case
+outbreak_length
+last_case - first_case
 
 # Define model parameters
 parms2 <- c(beta = 1.444,   # beta = daily effective contacts (alpha*beta)
            sigma = 0.973,  # sigma = rate of exposed to infectious per day
            gamma = 0.918,  # gamma = rate of recovery from infectious to recovered per day
            mu = 0.0,       # mu = per capita birth and death rate
-           omega = 1/60)     # omega = rate of immune loss per day
+           omega = 1/30)     # omega = rate of immune loss per day
 
 # Initial conditions
 init <- c(S = 90,           # number initially susceptible
@@ -196,11 +214,25 @@ seirs_out_long <- melt(as.data.frame(seirs_out), "time")
 # Plot the SEIR model output
 SEIRS <- ggplot(seirs_out_long, aes(x = time, y = value, colour = variable, group = variable)) +
   geom_line(lwd = 2) +
-  xlab("Time (in Days)") + ylab("Cases")
+  xlab("Time (in Days)") + ylab("Number in Each Compartment")
 
 # Save the SEIR plot as a PNG image
 ggsave(filename = "SEIRS.png", plot = SEIRS, width = 8, height = 6, dpi = 300)
 ```
+
+$$
+    \frac{dS}{dt} = -\lambda_t S_t I_t / N + \omega R_t + \alpha \lambda_t R_t I_t / N
+    $$
+$$
+    \frac{dE}{dt} = \lambda_t S_t I_t/N - \sigma_t E_t
+    $$
+$$
+    \frac{dI}{dt} = \sigma_t E_t - \gamma_t I_t
+    $$
+
+$$
+    \frac{dR}{dt} = \gamma_t I_t - \omega_t R_t - \alpha_t \lambda_t R_t I_t / N
+    $$
 
 ```{r}
 # Include the plot in the Quarto document
@@ -223,7 +255,7 @@ parms3 <- c(beta = 1.444,   # beta = daily effective contacts (alpha*beta)
            sigma = 0.973,  # sigma = rate of exposed to infectious per day
            gamma = 0.918,  # gamma = rate of recovery from infectious to recovered per day
            mu = 0.0,       # mu = per capita birth and death rate
-           omega = 1/25,   # omega = rate of immune loss per day
+           omega = 0.033,   # omega = rate of immune loss per day
            alpha = 0.5)  # alpha = reduced susceptibility after infection
 
 # Initial conditions
@@ -251,11 +283,25 @@ seirs_out_long2 <- melt(as.data.frame(seirs_out2), "time")
 # Plot the SEIR model output
 SEIRS2 <- ggplot(seirs_out_long2, aes(x = time, y = value, colour = variable, group = variable)) +
   geom_line(lwd = 2) +
-  xlab("Time in Days") + ylab("Number of Cases")
+  xlab("Time (in Days)") + ylab("Number in Each Compartment")
 
 # Save the SEIR plot as a PNG image
 ggsave(filename = "SEIRS2.png", plot = SEIRS2, width = 8, height = 6, dpi = 300)
 ```
+
+\$\$
+\\frac{dS}{dt} = -\\lambda_t S_t I_t / N + \\omega R_t
+\$\$
+\$\$
+\\frac{dE}{dt} = \\lambda_t S_t I_t/N - \\sigma_t E_t
+\$\$
+\$\$
+\\frac{dI}{dt} = \\sigma_t E_t - \\gamma_t I_t
+\$\$
+
+\$\$
+\\frac{dR}{dt} = \\gamma_t I_t - \\omega_t R_t
+\$\$
 
 ```{r}
 # Include the plot in the Quarto document
