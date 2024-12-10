@@ -23,11 +23,11 @@ library(fitdistrplus)
 ## Load Data
 
 ```{r}
-rff_2024 <- readRDS(here("rff_2024.rds"))
+rff_2024 <- readRDS(here("data/rff_2024.rds")) 
 
-roster_2024 <- readRDS(here("roster_2024.rds"))
+roster_2024 <- readRDS(here("data/roster_2024.rds"))
 
-transmission_pairs_2024 <- readRDS(here("transmission_pairs_2024.rds"))
+transmission_pairs_2024 <- readRDS(here("data/transmission_pairs_2024.rds"))
 
 ```
 
@@ -62,6 +62,34 @@ tp1<-transmission_pairs_2024 %>%
 tp2<-tp1 %>%
   mutate(generation_time = difftime(Date_Time_Onset,Infectedby_Date_Time_Onset, units = "hours")
   )
+
+#Testing if there was pre-symptomatic infectiousness
+rff_infectiousness<-rff_2024 %>%
+    mutate(
+        presymp_infectiousness1 = difftime(Date_Time_First_Exposure,Date_Time_Onset, units = "hours"),
+        presymp_infectiousness2 = difftime(Date_Time_Second_Exposure,Date_Time_Onset, units = "hours"),
+        presymp_infectiousness3 = difftime(Date_Time_Third_Exposure,Date_Time_Onset, units = "hours"),                                  
+        presymp_infectiousness4 = difftime(Date_Time_Fourth_Exposure,Date_Time_Onset, units = "hours"),
+        presymp_infectiousness5 = difftime(Date_Time_Fifth_Exposure,Date_Time_Onset, units = "hours")
+    )
+
+#Infectious period
+rff_ip<-rff_2024 %>%
+    mutate(
+        ip_recovery1 = difftime(Date_Time_Recovery,Date_Time_First_Exposure, units = "hours"),
+        ip_recovery2 = difftime(Date_Time_Second_Exposure,Date_Time_Recovery, units = "hours"),
+        ip_recovery3 = difftime(Date_Time_Third_Exposure,Date_Time_Recovery, units = "hours"), 
+        ip_recovery4 = difftime(Date_Time_Fourth_Exposure,Date_Time_Recovery, units = "hours"),
+        ip_recovery5 = difftime(Date_Time_Fifth_Exposure,Date_Time_Recovery, units = "hours")
+    )
+
+rff_2024$ip_end <- apply(rff_2024[c("Date_Time_Recovery","Date_Time_First_Exposure","Date_Time_Second_Exposure","Date_Time_Third_Exposure","Date_Time_Fourth_Exposure","Date_Time_Fifth_Exposure")], 1, max, na.rm = TRUE)
+
+rff_ip2<-rff_2024 %>%
+    mutate(
+        infectious_period = difftime(ip_end, Date_Time_Onset, units = "hours")
+    )
+
 ```
 
 ### Incubation Period
@@ -449,4 +477,69 @@ summary(generation_fit_ln)
 
 denscomp(generation_fit_ln)
 
+```
+
+### Infectious Period
+
+```{r}
+#Given
+
+#Median
+ip_median<-round(median(rff_ip2$infectious_period, na.rm = TRUE),2)
+#Mean
+ip_mean<-round(mean(rff_ip2$infectious_period, na.rm = TRUE),2)
+#Standard deviation
+round(sd(rff_ip2$infectious_period, na.rm = TRUE),2)
+
+#Range
+round(min(rff_ip2$infectious_period, na.rm = TRUE),2)
+round(max(rff_ip2$infectious_period, na.rm = TRUE),2)
+
+
+#Log infectious period
+rff_ip2$infectious_period<-as.numeric(rff_ip2$infectious_period)
+rff_log_ip<-rff_ip2 %>%
+  mutate(
+    ip_log_hours = log(infectious_period)
+  )
+#Median log
+round(median(rff_log_ip$ip_log_hours, na.rm = TRUE),2)
+#Standard deviation log
+round(sd(rff_log_ip$ip_log_hours, na.rm = TRUE),2)
+#Dispersion log
+round(exp(sd(rff_log_ip$ip_log_hours, na.rm = TRUE)),2)
+#Minimum log
+round(min(rff_log_ip$ip_log_hours, na.rm = TRUE),2)
+#Maximum log
+round(max(rff_log_ip$ip_log_hours, na.rm = TRUE),2)
+
+
+#Because incubation periods are log-normally distributed, 66% of cases should fall within the median/exp(sd) and median*exp(sd)
+ip_lower_bound<-median(rff_log_ip$ip_log_hours, na.rm = TRUE)/exp(sd(rff_log_ip$ip_log_hours, na.rm = TRUE))
+
+ip_upper_bound<-median(rff_log_ip$ip_log_hours, na.rm = TRUE)*exp(sd(rff_log_ip$ip_log_hours, na.rm = TRUE))
+
+ip_cases_in_range <- length(which(rff_log_ip$ip_log_hours > ip_lower_bound & rff_log_ip$ip_log_hours < ip_upper_bound))
+
+ip_secondary <- sum(!is.na(rff_log_ip$ip_log_hours))
+
+ip_pct_range <- round(100*(ip_cases_in_range/ip_secondary),0)
+
+
+#Graphing distribution and a fitted log-normal distribution
+ip<-rff_log_ip$infectious_period[!is.na(rff_log_ip$infectious_period) & rff_log_ip$infectious_period!=0]
+
+ip_fit_ln <- fitdist(ip, "lnorm")
+
+summary(ip_fit_ln)
+
+denscomp(ip_fit_ln)
+
+
+#Graphing a histogram of the normal incubation period
+hist(rff_log_ip$infectious_period,
+     xlab = "Hours Infectious", ylab = "Observations", main = "Distribution of Infectious Period"
+     )
+abline(v=ip_mean, col="red", lwd=2)
+abline(v=ip_median, col="green", lwd=2)
 ```
