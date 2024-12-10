@@ -235,16 +235,16 @@ init <- c(S = 90,           # number initially susceptible
 # Define SEIR model equations
 seirs_ode2 <- function(times2, init, parms3) {
   with(as.list(c(parms3, init)), {
-    dS <- mu * (S + E + I + R) + omega * R - beta * I * S / (S + E + I + R) - mu * S - alpha*beta*R*I/(S+E+I+R)
+    dS <- mu * (S + E + I + R) + omega * R - beta * I * S / (S + E + I + R) - mu * S + alpha*beta*R*I/(S+E+I+R)
     dE <- beta * I * S / (S + E + I + R) - sigma * E - mu * E
     dI <- sigma * E - gamma * I - mu * I
-    dR <- gamma * I - mu * R - omega * R + alpha*beta*R*I/(S+E+I+R)
+    dR <- gamma * I - mu * R - omega * R - alpha*beta*R*I/(S+E+I+R)
     list(c(dS, dE, dI, dR))
   })
 }
 
 # Model time and solution
-times <- seq(0, 100, length.out = 100)
+times <- seq(0, 150, length.out = 150)
 seirs_out2 <- lsoda(init, times, seirs_ode2, parms3)
 seirs_out_long2 <- melt(as.data.frame(seirs_out2), "time")
 
